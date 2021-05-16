@@ -1,128 +1,27 @@
 const express = require('express')
-const destinationModel = require('../model/destination')
 const checkAuth = require('../middleware/check-auth')
+const {
+    destinations_get_all,
+    destinations_patch_destination,
+    destinations_delete_destination,
+    destinations_get_destination,
+    destinations_post_destination
+} = require('../controller/destination')
 const router = express.Router()
 
 // total get destination
-router.get('/', checkAuth, (req, res) => {
-
-    destinationModel
-        .find()
-        .populate('user', ['email'])
-        .then(destinations => {
-            res.json({
-                msg : "get destinations",
-                count : destinations.length,
-                destinationInfo : destinations.map(destination => {
-                    return{
-                        id : destination._id,
-                        user : destination.user,
-                        nickname : destination.nickname,
-                        startPoint : destination.startPoint,
-                        endPoint : destination.endPoint
-                    }
-                })
-            })
-        })
-        .catch(err => {
-            res.status(500).json({
-                msg : err.message
-            })
-        })
-})
+router.get('/', checkAuth, destinations_get_all)
 
 // detail get destination
-router.get('/:userId', checkAuth, async (req, res) => {
-
-    const id = req.params.userId
-
-    try{
-        const destination = await destinationModel.findById(id).populate('user', ['email'])
-        res.json({destination})
-    }
-    catch(err){
-        res.status(500).json({
-            msg : err.message
-        })
-    }
-
-})
+router.get('/:destinationId', checkAuth, destinations_get_destination)
 
 // register destination
-router.post('/', checkAuth, (req, res) => {
-
-    const {user, nickname, startPoint, endPoint} = req.body
-
-    const newDestination = new destinationModel(
-        {
-            user,
-            nickname,
-            startPoint,
-            endPoint
-        }
-    )
-
-    newDestination
-        .save()
-        .then(destination => {
-            res.json({
-                msg : "register destination",
-                destinationInfo : {
-                    id : destination._id,
-                    user : destination.user,
-                    nickname : destination.nickname,
-                    startPoint : destination.startPoint,
-                    endPoint : destination.endPoint
-                }
-            })
-        })
-        .catch(err => {
-            res.status(500).json({
-                msg : err.message
-            })
-        })
-})
+router.post('/', checkAuth, destinations_post_destination)
 
 // update destination
-router.patch('/:userId', checkAuth, async (req, res) => {
-
-    const id = req.params.userId
-
-    const updateOps = {}
-
-    for(const ops of req.body){
-        updateOps[ops.propName] = ops.value
-    }
-
-    try{
-        await destinationModel.findByIdAndUpdate(id, {$set : updateOps})
-        res.json({
-            msg : "update destination by " + id
-        })
-    }
-    catch(err){
-        res.status(500).json({
-            msg : err.message
-        })
-    }
-})
+router.patch('/:destinationId', checkAuth, destinations_patch_destination)
 
 // detail delete destination
-router.delete('/:userId', checkAuth, async (req, res) => {
-
-    const id = req.params.userId
-
-    try{
-        await destinationModel.findByIdAndRemove(id)
-        res.json({
-            msg : "delete destination by " + id
-        })
-    }
-    catch(err){
-        res.status(500).json({
-            msg : err.message
-        })
-    }
-})
+router.delete('/:userId', checkAuth, destinations_delete_destination)
 
 module.exports = router

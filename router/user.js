@@ -1,133 +1,27 @@
 const express = require('express')
-const userModel = require('../model/user')
-const jwt = require('jsonwebtoken')
 const checkAuth = require('../middleware/check-auth')
+const {
+    users_login_user,
+    users_signup_user,
+    users_get_all,
+    users_delete_user,
+    users_get_user
+} = require('../controller/user')
 const router = express.Router()
 
 // get userInfo
-router.get('/', (req, res) => {
-    userModel
-        .find()
-        .then(users => {
-            res.json({
-                msg : "get users",
-                count : users.length,
-                userInfo : users.map(user => {
-                    return{
-                        id : user._id,
-                        name : user.name,
-                        email : user.email,
-                        password : user.password,
-                        profileImage : user.profileImage,
-                        rule : user.rule
-                    }
-                })
-            })
-        })
-        .catch(err => {
-            res.status(500).json({
-                msg : err.message
-            })
-        })
-})
+router.get('/', users_get_all)
+
+// detail get userInfo
+router.get('/:userId', users_get_user)
 
 // signup
-router.post('/signup', async (req, res) => {
-
-    const {name, email, password} = req.body
-
-    try{
-        const user = await userModel.findOne({email})
-        if(user){
-            return res.status(400).json({
-                msg : 'user email, please other email'
-            })
-        }
-        else{
-            const user = new userModel(
-                {
-                    name, email, password
-                }
-            )
-
-            await user.save()
-
-            res.json({user})
-        }
-    }
-    catch(err){
-        res.status(500).json({
-            msg : err.message
-        })
-    }
-})
+router.post('/signup', users_signup_user)
 
 // login
-router.post('/login', async (req, res) => {
-
-    const {email, password} = req.body
-
-    try{
-        const user = await userModel.findOne({email})
-        if(!user){
-            return res.status(400).json({
-                msg : "user email, please other email"
-            })
-        }
-        else{
-            await user.comparePassword(password, (err, isMatch) => {
-                if(err || !isMatch){
-                    return res.status(401).json({
-                        msg : "not match password"
-                    })
-                }
-                else{
-                    const payload = {
-                        id : user._id,
-                        email : user.email
-                    }
-
-                    const token = jwt.sign(
-                        payload,
-                        process.env.SECRET_KEY,
-                        {expiresIn: '1h'}
-                    )
-
-                    res.json({token})
-                }
-            })
-        }
-    }
-    catch(err){
-        res.status(500).json({
-            msg : err.message
-        })
-    }
-})
+router.post('/login', users_login_user)
 
 // detial delete userInfo
-router.delete('/:userId', checkAuth, (req, res) => {
-
-    const id = req.params.userId
-
-    userModel
-        .findByIdAndRemove(id)
-        .then(user => {
-            if(!user){
-                return res.status(402).json({
-                    msg : "no user id"
-                })
-            }
-            res.json({
-                msg : "delete user by " + id
-            })
-        })
-        .catch(err => {
-            res.status(500).json({
-                msg : err.message
-            })
-        })
-
-})
+router.delete('/:userId', checkAuth, users_delete_user)
 
 module.exports = router
